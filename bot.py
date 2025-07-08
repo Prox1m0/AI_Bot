@@ -1,5 +1,5 @@
 import asyncio
-from telegram.ext import Application, CommandHandler, MessageHandler
+from telegram.ext import Application, CommandHandler, MessageHandler, filters
 from openai import OpenAI
 import settings
 
@@ -8,12 +8,14 @@ def main():
     my_bot = Application.builder().token(settings.API_BOT).build()
     
     my_bot.add_handler(CommandHandler("start", start))
-    my_bot.add_handler(CommandHandler("res", ask))
+    chat_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), ask)
+    my_bot.add_handler(chat_handler)
+
     my_bot.run_polling()
 
 
 async def start(update, context):
-    await update.message.reply_text('Я - бот, созданный на базе Cypher-Alpha AI. \n Напиши /res (ваш запрос), чтобы ИИ ответил на него')
+    await update.message.reply_text('Я - бот, созданный на базе Cypher-Alpha AI. \n Напиши вопрос, чтобы ИИ ответил на него')
 
 def chat(message):
     client = OpenAI(
