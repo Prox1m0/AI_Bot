@@ -4,9 +4,10 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from openai import OpenAI
 import settings
 
+#трекер для выбранной ИИ (messagehandler)
 user_states = {}
 
-
+#обработчик кнопок
 async def click_button(update, context):
 
     query = update.callback_query
@@ -18,6 +19,7 @@ async def click_button(update, context):
 
     await query.edit_message_text(text=f"Выбрана нейросеть: {query.data}. Отправьте запрос.")
 
+#функция для отмены выбранной ИИ
 async def cancel(update, context):
     chat_id = update.message.chat_id
     if chat_id in user_states:
@@ -40,7 +42,7 @@ def main():
 
     my_bot.run_polling()
 
-
+#команда /start
 async def start(update, context):
     button_list = [
         [InlineKeyboardButton("Cypher-Alpha AI", callback_data='Cypher-Alpha AI')],
@@ -48,15 +50,16 @@ async def start(update, context):
     ]
     
     reply_markup = InlineKeyboardMarkup(button_list)
-    await update.message.reply_text('Я - бот, созданный на базе Cypher-Alpha AI.' 
-                                    '\n Напиши вопрос, чтобы ИИ ответил на него. По умолчанию установлен Cypher-Alpha AI. '
-                                    '\n Если хочешь воспользоваться Mistral Mini, напиши /mis перед запросом.' 
-                                    '\n\n\n Если возникли проблемы, сообщите @tarazz77.\n Вероятно, надо переподключить API key.')
+    await update.message.reply_text('Я ваш удобный виртуальный помощник' 
+                                    '\n Перед запросом необходимо выбрать модель, нажав на одну из кнопок.'
+                                    '\n После выбора чат активируется, можете смело обращаться.'
+                                    '\n\n Чтобы поменять выбранную модель, используйте /cancel для деактивации, затем повторно выберите сеть.' 
+                                    '\n\n\n Если возникли проблемы, сообщите @tarazz77')
 
     await update.message.reply_text('Выберите нейросеть:', reply_markup=reply_markup)
     
 
-
+#логика ответа cypher-alpha
 def chat(message):
     client = OpenAI(
         base_url=settings.BASE_AI_URL,
@@ -72,8 +75,9 @@ def chat(message):
         }
     ]
     )
-    return "--CYPHER-ALPHA AI--\n" + completion.choices[0].message.content
+    return "   --CYPHER-ALPHA AI--\n\n" + completion.choices[0].message.content
 
+#логика ответа mistral mini
 def mistral(image = '', request = ''):
     client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
@@ -94,9 +98,9 @@ def mistral(image = '', request = ''):
         }
     ]
     )
-    return '--MISTRAL AI--\n' + completion.choices[0].message.content
+    return '   --MISTRAL AI--\n\n' + completion.choices[0].message.content
 
-
+#функция общего обработчика запросов с определением выбранной сети
 async def common_request(update, context):
     chat_id = update.message.chat_id
     
@@ -106,7 +110,7 @@ async def common_request(update, context):
     
     user_text = update.message.text
     model = user_states[chat_id]["selected_model"]
-    #await update.message.reply_text('Собираю информацию...')
+    await update.message.reply_text('Собираю информацию...')
     if model == "Cypher-Alpha AI":
         response = chat(message=user_text) 
     else:
